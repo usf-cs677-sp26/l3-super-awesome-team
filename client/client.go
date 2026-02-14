@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -21,13 +22,16 @@ func put(msgHandler *messages.MessageHandler, fileName string) int {
 		log.Fatalln(err)
 	}
 
-	// Tell the server we want to store this file
-	msgHandler.SendStorageRequest(fileName, uint64(info.Size()))
+	// Tell the server we want to store this file (send only the base name, no directories)
+	msgHandler.SendStorageRequest(filepath.Base(fileName), uint64(info.Size()))
 	if ok, _ := msgHandler.ReceiveResponse(); !ok {
 		return 1
 	}
 
-	file, _ := os.Open(fileName)
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	md5 := md5.New()
 	w := io.MultiWriter(msgHandler, md5)
 	io.CopyN(w, file, info.Size()) // Checksum and transfer file at same time
@@ -43,10 +47,12 @@ func put(msgHandler *messages.MessageHandler, fileName string) int {
 	return 0
 }
 
-func get(msgHandler *messages.MessageHandler, fileName string) int {
+func get(msgHandler *messages.MessageHandler, fileName string, dir string) int {
 	fmt.Println("GET", fileName)
 
-	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
+	// Create the file in the destination directory
+	outputPath := filepath.Join(dir, fileName)
+	file, err := os.OpenFile(outputPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Println(err)
 		return 1
@@ -55,6 +61,8 @@ func get(msgHandler *messages.MessageHandler, fileName string) int {
 	msgHandler.SendRetrievalRequest(fileName)
 	ok, _, size := msgHandler.ReceiveRetrievalResponse()
 	if !ok {
+		file.Close()
+		os.Remove(outputPath)
 		return 1
 	}
 
@@ -69,11 +77,11 @@ func get(msgHandler *messages.MessageHandler, fileName string) int {
 
 	if util.VerifyChecksum(serverCheck, clientCheck) {
 		log.Println("Successfully retrieved file.")
+		return 0
 	} else {
 		log.Println("FAILED to retrieve file. Invalid checksum.")
+		return 1
 	}
-
-	return 0
 }
 
 func main() {
@@ -111,6 +119,6 @@ func main() {
 	if action == "put" {
 		os.Exit(put(msgHandler, fileName))
 	} else if action == "get" {
-		os.Exit(get(msgHandler, fileName))
+		os.Exit(get(msgHandler, fileName, dir))
 	}
 }
