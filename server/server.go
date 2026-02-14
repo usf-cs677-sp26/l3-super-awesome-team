@@ -77,16 +77,16 @@ func handleStorage(msgHandler *messages.MessageHandler, request *messages.Storag
 	clientCheck := clientCheckMsg.GetChecksum().Checksum
 
 	if util.VerifyChecksum(serverCheck, clientCheck) {
-		log.Println("Successfully stored file.")
+		// log.Println("Successfully stored file.")
 		_ = msgHandler.SendResponse(true, "Storage complete")
 	} else {
-		log.Println("FAILED to store file. Invalid checksum.")
+		// log.Println("FAILED to store file. Invalid checksum.")
 		_ = os.Remove(request.FileName)
 		_ = msgHandler.SendResponse(false, "Invalid checksum")
 	}
 
 	// Requirement: disconnect client after responding with status.
-	msgHandler.Close()
+	// msgHandler.Close()
 }
 
 func handleRetrieval(msgHandler *messages.MessageHandler, request *messages.RetrievalRequest) {
@@ -95,12 +95,21 @@ func handleRetrieval(msgHandler *messages.MessageHandler, request *messages.Retr
 	// Get file size and make sure it exists
 	info, err := os.Stat(request.FileName)
 	if err != nil {
-		log.Fatalln(err)
+		// Requirement: indicate failure if it doesn't exist (or can't stat).
+		_ = msgHandler.SendRetrievalResponse(false, err.Error(), 0)
+		msgHandler.Close()
+		return
 	}
 
 	msgHandler.SendRetrievalResponse(true, "Ready to send", uint64(info.Size()))
 
-	file, _ := os.Open(request.FileName)
+	file, err := os.Open(request.FileName)
+	if err != nil {
+		_ = msgHandler.SendRetrievalResponse(false, err.Error(), 0)
+		msgHandler.Close()
+		return
+	}
+
 	md5 := md5.New()
 	w := io.MultiWriter(msgHandler, md5)
 	io.CopyN(w, file, info.Size()) // Checksum and transfer file at same time

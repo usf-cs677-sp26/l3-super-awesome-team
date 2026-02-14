@@ -4,3 +4,4 @@
 2. During streaming process, I check whether there's a failure/error.
 3. Check if there's error for receiving checksum.
 4. Respond to the client with the status of the transfer (success or failure), rather than only track logs. Also, disconnect the client
+5. In retrieving process, server will indicate failure if the file doesn’t exit
