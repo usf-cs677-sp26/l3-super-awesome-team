@@ -1,0 +1,5 @@
+Hello, this is a text file for testing file transfer.
+Line 2: The quick brown fox jumps over the lazy dog.
+Line 3: 1234567890 abcdefghijklmnopqrstuvwxyz
+Line 4: Special chars: !@#$%^&*()_+-=[]{}|;':",.<>?/
+Line 5: End of test file.
