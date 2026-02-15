@@ -11,3 +11,9 @@
 3. Support the optional `[destination-dir]` argument for GET by saving the retrieved file into the specified directory (defaults to current working directory).
 4. Return a non-zero exit code when GET checksum verification fails, instead of always returning success.
 5. Clean up the created file if the server rejects the retrieval request.
+## Test
+![Test store text file](./assets/server_store_text.png)
+![Test store text file](./assets/client_put_text.png)
+![Test store binary file](./assets/server_store_bin.png)
+![Test retrieve file](./assets/server_retrieve.png)
+![Test retrieve file](./assets/client_retrieve.png)
