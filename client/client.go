@@ -50,19 +50,18 @@ func put(msgHandler *messages.MessageHandler, fileName string) int {
 func get(msgHandler *messages.MessageHandler, fileName string, dir string) int {
 	fmt.Println("GET", fileName)
 
-	// Create the file in the destination directory
+	// Send retrieval request first, then create the file only after server confirms
+	msgHandler.SendRetrievalRequest(fileName)
+	ok, _, size := msgHandler.ReceiveRetrievalResponse()
+	if !ok {
+		return 1
+	}
+
+	// Create the file in the destination directory after server confirms it exists
 	outputPath := filepath.Join(dir, fileName)
 	file, err := os.OpenFile(outputPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Println(err)
-		return 1
-	}
-
-	msgHandler.SendRetrievalRequest(fileName)
-	ok, _, size := msgHandler.ReceiveRetrievalResponse()
-	if !ok {
-		file.Close()
-		os.Remove(outputPath)
 		return 1
 	}
 
