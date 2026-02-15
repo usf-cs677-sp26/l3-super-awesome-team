@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func put(msgHandler *messages.MessageHandler, fileName string) int {
@@ -115,9 +116,14 @@ func main() {
 	}
 	openDir.Close()
 
+	start := time.Now()
+	var exitCode int
 	if action == "put" {
-		os.Exit(put(msgHandler, fileName))
+		exitCode = put(msgHandler, fileName)
 	} else if action == "get" {
-		os.Exit(get(msgHandler, fileName, dir))
+		exitCode = get(msgHandler, fileName, dir)
 	}
+	elapsed := time.Since(start)
+	fmt.Printf("%s operation took %v\n", strings.ToUpper(action), elapsed)
+	os.Exit(exitCode)
 }
